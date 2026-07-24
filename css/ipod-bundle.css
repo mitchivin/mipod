@@ -1,0 +1,971 @@
+/* MiPod shell OSS — chrome + shell demo LCD (no player CSS) */
+
+/* ── Reset ────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+}
+
+html {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Page shell header — one inset for brand text, menu icon, and panels. */
+    --shell-chrome-row: 52px;
+    --shell-chrome-h: var(--shell-chrome-row);
+    --shell-brand-size: 14px;
+    --shell-toggle-size: 52px;
+    --shell-menu-icon: 24px;
+    --shell-inset: 16px;
+    /* Fit factor inside the stage below the header (desktop < 1). */
+    --ipod-fit: 0.88;
+    --ipod-stage-pad-x: 40px;
+    --ipod-stage-pad-y: 24px;
+}
+
+body {
+    height: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background:
+        radial-gradient(ellipse 62% 70% at -8% 52%, rgba(34, 197, 94, 0.09), transparent 78%),
+        radial-gradient(ellipse 64% 72% at 108% 48%, rgba(16, 185, 129, 0.08), transparent 80%),
+        radial-gradient(circle at 18% 22%, rgba(110, 231, 183, 0.03), transparent 48%),
+        radial-gradient(circle at 82% 26%, rgba(74, 222, 128, 0.025), transparent 50%),
+        linear-gradient(180deg, #02110c 0%, #010806 48%, #000302 100%);
+    font-family: 'Source Sans 3', sans-serif;
+    position: relative;
+}
+
+/* ── Background Ambience ──────────────────────────────────── */
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 48% 64% at 0% 50%, rgba(34, 197, 94, 0.04), transparent 82%),
+        radial-gradient(ellipse 48% 64% at 100% 50%, rgba(16, 185, 129, 0.04), transparent 82%);
+    transition: opacity 0.3s ease;
+}
+
+/* ── iPod stage (viewport below header; device centered inside) ── */
+
+#ipod-container {
+    position: fixed;
+    top: var(--shell-chrome-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin: 0;
+    padding: var(--ipod-stage-pad-y) var(--ipod-stage-pad-x);
+    --base-width: min(
+        calc((100vw - (var(--ipod-stage-pad-x) * 2)) * var(--ipod-fit)),
+        calc(
+            (100dvh - var(--shell-chrome-h) - (var(--ipod-stage-pad-y) * 2)) * 0.5955 *
+                var(--ipod-fit)
+        )
+    );
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.mobile-viewport {
+    --shell-chrome-row: 48px;
+    --shell-chrome-h: calc(48px + env(safe-area-inset-top, 0px));
+    --shell-brand-size: 13px;
+    --shell-toggle-size: 48px;
+    --shell-menu-icon: 23px;
+    --shell-inset: 10px;
+    /* Slight inset so the taller header never clips the device */
+    --ipod-fit: 0.96;
+    --ipod-stage-pad-x: 14px;
+    --ipod-stage-pad-y: 12px;
+}
+
+#ipod-component {
+    display: block;
+    width: var(--base-width);
+    flex-shrink: 0;
+}
+
+body.app-loading #ipod-container {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    pointer-events: none;
+}
+
+/* Boot loader — minimal spinner on page background */
+#app-shell-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+#app-shell-loader.is-hidden {
+    opacity: 0;
+}
+
+body.app-loading #app-shell-loader {
+    display: flex;
+}
+
+.shell-boot-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(134, 239, 172, 0.16);
+    border-top-color: rgba(134, 239, 172, 0.95);
+    box-shadow: 0 0 22px rgba(74, 222, 128, 0.22);
+    animation: shellBootSpin 0.85s linear infinite;
+}
+
+@keyframes shellBootSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#ipod {
+    position: relative;
+    z-index: 1;
+    width: var(--base-width);
+    height: calc(var(--base-width) / 0.5955);
+    flex-shrink: 0;
+    display: block;
+    --u: calc(var(--base-width) / 371);
+}
+
+#control-wheel {
+    touch-action: none;
+}
+
+/* ── DoodleDev Shell Primitives ───────────────────────────── */
+
+.item {
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+.item.interactive {
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.05s ease-in-out, filter 0.05s ease-in-out;
+    will-change: transform;
+}
+
+.item.interactive.pressed {
+    transform: scale(0.98) !important;
+}
+
+.shape {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: auto;
+}
+
+/* ── Page shell header (brand left, menu right — desktop + mobile) ── */
+
+#shell-help {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    z-index: 30001;
+    width: 100%;
+    height: var(--shell-chrome-h);
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    opacity: 1;
+    background: rgba(2, 17, 12, 0.42);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    -webkit-tap-highlight-color: transparent;
+}
+
+#shell-help-toggle {
+    box-sizing: border-box;
+    height: var(--shell-chrome-row);
+    width: auto;
+    margin: 0;
+    padding: 0 var(--shell-inset) 0 12px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    filter: none;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    opacity: 0.48;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#shell-help-toggle .material-symbols-outlined,
+#shell-help-toggle .shell-help-icon-menu {
+    font-family: 'Material Symbols Outlined', sans-serif;
+    font-weight: normal;
+    font-style: normal;
+    font-size: var(--shell-menu-icon);
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+}
+
+.shell-help-bar {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--shell-chrome-row);
+    padding: 0;
+    gap: 0;
+}
+
+/* Brand — same DOM/CSS as MI Boy shell (disabled btn, shared --shell-inset). */
+.shell-brand {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: stretch;
+    min-width: 0;
+    height: var(--shell-chrome-row);
+}
+
+.shell-brand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    max-width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0 0 0 var(--shell-inset);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    appearance: none;
+    -webkit-appearance: none;
+    color: rgba(190, 230, 205, 0.72);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: var(--shell-brand-size);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.shell-brand-btn:disabled {
+    opacity: 1;
+    color: rgba(190, 230, 205, 0.72);
+}
+
+.shell-brand-name {
+    color: rgba(220, 245, 228, 0.92);
+    font-weight: 600;
+}
+
+.shell-brand-tag {
+    color: rgba(160, 210, 180, 0.48);
+    font-weight: 500;
+}
+
+.shell-help-actions {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    height: var(--shell-chrome-row);
+}
+
+#shell-help-toggle:hover,
+#shell-help-toggle:focus-visible,
+#shell-help.is-open #shell-help-toggle {
+    opacity: 0.95;
+    background: transparent;
+    color: #ffffff;
+}
+
+#shell-help-toggle:active {
+    background: transparent;
+    opacity: 0.8;
+}
+
+#shell-help-panel {
+    position: absolute;
+    top: 100%;
+    left: auto;
+    right: var(--shell-inset);
+    box-sizing: border-box;
+    min-width: 204px;
+    max-width: min(280px, calc(100vw - 28px));
+    margin-top: 8px;
+    padding: 6px 0;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(6, 14, 11, 0.88);
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.4),
+        inset 0 1px 1px rgba(255, 255, 255, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+}
+
+#shell-help-panel[hidden] {
+    display: none !important;
+}
+
+.shell-help-link {
+    font-family:
+        'Inter',
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.shell-help-subheader {
+    margin: 6px 0 2px;
+    padding: 4px 16px 2px;
+    font-family:
+        'Inter',
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.42);
+    pointer-events: none;
+    user-select: none;
+}
+
+.shell-help-subheader:first-child {
+    margin-top: 2px;
+}
+
+.shell-help-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-help-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.72);
+    pointer-events: none;
+}
+
+.shell-help-icon.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined', sans-serif;
+    font-weight: normal;
+    font-style: normal;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shell-help-icon--github {
+    display: block;
+}
+
+.shell-help-label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.shell-help-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.shell-help-link:active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+/* ── DoodleDev confirm ─────────────────────────────────────── */
+
+#shell-confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 40000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    pointer-events: auto;
+}
+
+#shell-confirm[hidden] {
+    display: none !important;
+}
+
+.shell-confirm-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.52);
+}
+
+.shell-confirm-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(300px, calc(100vw - 40px));
+    padding: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(6, 14, 11, 0.94);
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.45),
+        inset 0 1px 1px rgba(255, 255, 255, 0.16);
+    overflow: hidden;
+    text-align: left;
+}
+
+.shell-confirm-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.shell-confirm-content {
+    padding: 12px 14px 12px;
+}
+
+.shell-confirm-title,
+.shell-confirm-message,
+.shell-confirm-btn {
+    font-family:
+        'Inter',
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+}
+
+.shell-confirm-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+    text-align: left;
+}
+
+.shell-confirm-message {
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.68);
+    text-align: left;
+    text-wrap: pretty;
+}
+
+.shell-confirm-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.shell-confirm-btn {
+    flex: 1 1 0;
+    margin: 0;
+    padding: 5px 8px;
+    min-height: 28px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+    transition:
+        background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-confirm-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.shell-confirm-btn--primary {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.32);
+    color: #ffffff;
+}
+
+.shell-confirm-btn--primary:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+/* Narrow viewports — same taller mobile header + slight device inset. */
+@media (max-width: 600px) {
+    html {
+        --shell-chrome-row: 48px;
+        --shell-chrome-h: calc(48px + env(safe-area-inset-top, 0px));
+        --shell-brand-size: 13px;
+        --shell-toggle-size: 48px;
+        --shell-menu-icon: 23px;
+        --shell-inset: 10px;
+        --ipod-fit: 0.96;
+        --ipod-stage-pad-x: 14px;
+        --ipod-stage-pad-y: 12px;
+    }
+
+    .shell-help-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+    }
+}
+
+/* ── iPod Shell ────────────────────────────────────────────── */
+
+#base {
+  z-index: 2;
+  filter: none;
+}
+
+#base svg,
+#base img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Screen Content ───────────────────────────────────────── */
+
+/* Overlay owns the visible bezel stroke — hide the original so it
+   doesn't double up / sit outside the scaled overlay. */
+#screen > .shape .stroke-path {
+  stroke-width: 0;
+}
+
+#ipod-screen-content {
+  position: absolute;
+  top: calc(var(--u) * 1.5);
+  left: calc(var(--u) * 1.5);
+  width: calc(100% - var(--u) * 3);
+  height: calc(100% - var(--u) * 3);
+  background: #fff;
+  color: #000;
+  font-family: 'Myriad Pro', 'Source Sans 3', 'Source Sans Pro', 'Gill Sans', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: calc(var(--u) * 6);
+  z-index: 2;
+}
+
+/* Stroke-only bezel twin — sits above screen content so subpixel white
+   overhangs get covered by the same path as #screen. */
+#screen-bezel-overlay {
+  pointer-events: none;
+  transform: translateZ(4px) scale(0.996);
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+
+#screen-bezel-overlay .shape {
+  overflow: visible;
+}
+
+/* ── Click Wheel ──────────────────────────────────────────── */
+
+#control-wheel {
+  border-radius: 50%;
+  transform: translateZ(3px);
+  backface-visibility: hidden;
+}
+
+/*
+ * Contact-follow (.rock-follow) — rim darken on tap/hold and scrub.
+ * Glyph motion stays on `.pressed` only (ipod-outer-glyphs.css).
+ * - Desktop: SVG stroke + #wheel-rock-follow (controls.js moves endpoints)
+ * - Mobile: #wheel-contact-ring conic; SVG stroke hidden while following
+ */
+#wheel-contact-ring {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  /* Soft contact shade — avoid a harsh dark wedge sweeping the rim. */
+  background: conic-gradient(
+    from calc(var(--wheel-contact-angle, 0) * 1deg + 90deg),
+    #5c5c5c 0deg,
+    #787878 55deg,
+    #8a8a8a 120deg,
+    #929292 180deg,
+    #8a8a8a 240deg,
+    #787878 305deg,
+    #5c5c5c 360deg
+  );
+  -webkit-mask-image: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 1.25px),
+    #000 calc(100% - 1.25px),
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 1.25px),
+    #000 calc(100% - 1.25px),
+    #000 100%
+  );
+}
+
+#control-wheel.rock-follow #wheel .stroke-path {
+  stroke: url(#wheel-rock-follow);
+  stroke-width: 1.1;
+  transition: none;
+}
+
+html.mobile-viewport #wheel-contact-ring {
+  display: block;
+}
+
+html.mobile-viewport #control-wheel.rock-follow #wheel-contact-ring {
+  opacity: 1;
+}
+
+html.mobile-viewport #control-wheel.rock-follow #wheel .stroke-path {
+  opacity: 0;
+}
+
+/* ── Center Button ────────────────────────────────────────── */
+
+#mid-button {
+  transition:
+    transform 0.06s cubic-bezier(0.2, 0.7, 0.3, 1),
+    filter 0.06s ease;
+}
+
+#mid-button.pressed {
+  transform: scale(0.994) !important;
+  filter: brightness(0.96);
+}
+
+#mid-button.pressed .stroke-path {
+  stroke: url(#mid-rock-play);
+}
+
+/* ── Stroke Transition ────────────────────────────────────── */
+
+.item.interactive .stroke-path {
+  transition:
+    stroke 0.08s ease,
+    stroke-width 0.08s ease;
+}
+
+/* Outer MENU/◀/▶/▶❚❚ press + contact → css/ipod-outer-glyphs.css */
+
+/**
+ * LOCKED — outer wheel glyphs (MENU / ◀ / ▶ / ▶❚❚).
+ *
+ * Owners:
+ *   CSS (this file) — layout, press sink, contact opacity
+ *   JS (controls.js) — `.pressed` via bindButton; `.wheel-contact` + rock-follow rim
+ *
+ * Contract (do not break):
+ *   1. One travel: `--rim-sink` in `--u` px — same for all four, toward the rim.
+ *   2. Only `.pressed` translates `.shape`. Never translate on `.wheel-contact`.
+ *   3. `.wheel-contact` = opacity dim only (tap/hold/scrub “here”).
+ *   4. ▶❚❚ centered with inset/margin — never transform for layout.
+ *   5. No outer-glyph press rules in ipod.css / global.css.
+ *
+ * Idle opacity is inline 0.28 on the hit boxes in IpodDesign.js.
+ */
+
+#control-wheel {
+  --rim-sink: calc(var(--u) * 0.14);
+}
+
+#menu,
+#next,
+#prev,
+#play-pause {
+  overflow: visible;
+  transform: none !important;
+  transition: opacity 0.1s ease;
+}
+
+#menu::after,
+#next::after,
+#prev::after,
+#play-pause::after {
+  content: '';
+  position: absolute;
+  inset: -30px;
+}
+
+#menu .shape,
+#next .shape,
+#prev .shape,
+#play-pause .shape {
+  display: block;
+  object-fit: contain;
+  transition: transform 0.07s cubic-bezier(0.25, 0.7, 0.3, 1);
+}
+
+#menu .shape,
+#next .shape,
+#prev .shape {
+  width: 100%;
+  height: 100%;
+}
+
+#menu,
+#menu .shape {
+  overflow: visible;
+}
+
+/* Wide ▶❚❚ art in a narrower hit box — layout center, sink-only transform. */
+#play-pause .shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  margin: auto;
+  aspect-ratio: 218 / 122.7;
+}
+
+#menu.wheel-contact,
+#next.wheel-contact,
+#prev.wheel-contact,
+#play-pause.wheel-contact,
+#menu.pressed,
+#next.pressed,
+#prev.pressed,
+#play-pause.pressed {
+  opacity: 0.25 !important;
+}
+
+#menu.pressed .shape {
+  transform: translateY(calc(-1 * var(--rim-sink)));
+}
+
+#next.pressed .shape {
+  transform: translateX(var(--rim-sink));
+}
+
+#prev.pressed .shape {
+  transform: translateX(calc(-1 * var(--rim-sink)));
+}
+
+#play-pause.pressed .shape {
+  transform: translateY(var(--rim-sink));
+}
+
+/* Shell OSS LCD — status bar + 8 centered rows. Not used by the private app. */
+
+#shell-lcd-demo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#ipod-header,
+.ipod-status-bar {
+  height: calc(var(--u) * 20);
+  background: linear-gradient(to bottom, #ffffff 0%, #f2f2f2 45%, #e6e6e6 50%, #d9d9d9 100%);
+  border-bottom: calc(var(--u) * 1) solid #999;
+  display: flex;
+  align-items: center;
+  padding: 0 calc(var(--u) * 8);
+  justify-content: space-between;
+  box-shadow: inset 0 calc(var(--u) * 1) 0 #fff;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: geometricPrecision;
+}
+
+#ipod-header .header-left,
+.ipod-status-bar .header-left {
+  font-weight: 700;
+  font-size: calc(var(--u) * 14);
+  font-size: round(calc(var(--u) * 14), 1px);
+  line-height: 1;
+  flex-grow: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.3px;
+  padding-top: 1px;
+  box-sizing: border-box;
+}
+
+#ipod-header .header-right,
+.ipod-status-bar .header-right {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+}
+
+.battery-icon {
+  width: calc(var(--u) * 27);
+  height: calc(var(--u) * 12);
+  display: block;
+  flex: none;
+}
+
+#shell-lcd-demo .menu-list-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  background: #fff;
+}
+
+.menu-item {
+  height: 12.5%;
+  flex-shrink: 0;
+  width: 100%;
+  padding: calc(var(--u) * 3) calc(var(--u) * 12);
+  font-size: calc(var(--u) * 14);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: inset 0 calc(var(--u) * -1) 0 #eee;
+  letter-spacing: calc(var(--u) * -0.4);
+}
+
+.menu-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  min-width: 0;
+}
+
+.menu-item.selected {
+  background: linear-gradient(to bottom, #4a8df3 0%, #2f7cf1 45%, #186bf0 50%, #155dd5 100%);
+  color: #fff;
+  box-shadow: none;
+}
+

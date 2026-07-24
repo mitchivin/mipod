@@ -1,0 +1,11 @@
+{
+  "name": "mi-pod-shell",
+  "version": "0.0.9",
+  "private": true,
+  "description": "Open-source DoodleDev click-wheel shell for MiPod (no music player).",
+  "license": "MIT",
+  "author": "Mitch Ivin",
+  "scripts": {
+    "start": "npx --yes serve ."
+  }
+}
