@@ -7,7 +7,7 @@ Live demo: [builds.doodledev.app/#/mipod](https://builds.doodledev.app/?go=1#/mi
 The shell was designed in **[DoodleDev](https://doodledev.app)** and mounts as a web component. No framework, no runtime deps.
 
 <p align="center">
-  <img width="1920" height="1080" alt="MiPod shell" src="https://github.com/user-attachments/assets/e16e4ffa-e94d-4658-91c7-3394b5dfdbb5" />
+  <img src="https://github.com/user-attachments/assets/2d15667e-1ee2-4979-a0a2-5bd7c3fa78f1" alt="MiPod now playing" />
 </p>
 
 ## Features
@@ -18,7 +18,7 @@ The shell was designed in **[DoodleDev](https://doodledev.app)** and mounts as a
 - Plain static site. Serve the folder from anywhere
 
 <p align="center">
-  <img width="1920" height="1080" alt="MiPod now playing" src="https://github.com/user-attachments/assets/72e789c7-d8c8-4cc1-a84e-f1507b26f8a1" />
+  <img src="https://github.com/user-attachments/assets/a05e9b16-afde-496b-8cbd-174d2450feda" alt="MiPod shell" />
 </p>
 
 ## Run locally
