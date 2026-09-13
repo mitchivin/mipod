@@ -13,7 +13,7 @@ Works on desktop and phone. Open the live demo and start listening.
 - **Music library.** Browse artists, albums, songs and playlists on the device.
 - **Click wheel.** Navigate and control playback with the familiar circular interface.
 - **Now Playing.** View album artwork, track details and playback progress.
-- **Local music import.** Add music from your own device in the standalone player.
+- **Local music import.** Add music from your own device in the live demo.
 - **Responsive shell.** The full device scales across desktop and phone layouts.
 
 ![MiPod Classic menu](assets/mipod-menu-device-1920x1080.webp)
