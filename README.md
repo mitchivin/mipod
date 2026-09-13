@@ -2,9 +2,9 @@
 
 A browser click-wheel music player with library browsing, playlists, album artwork, playback and local music import.
 
-**[Explore in DoodleDev](https://doodledev.app/builds/#mipod) · [Launch MiPod Classic](https://mitchivindesign.github.io/mipod/)**
+**[Open live demo](https://mitchivindesign.github.io/mipod/) · [Explore in DoodleDev](https://doodledev.app/builds/#mipod)**
 
-Works on desktop and phone. Open it in the DoodleDev Builds gallery or launch the standalone player.
+Works on desktop and phone. Open the live demo and start listening.
 
 ![MiPod Classic Now Playing](assets/mipod-playing-device-1920x1080.webp)
 
@@ -20,9 +20,9 @@ Works on desktop and phone. Open it in the DoodleDev Builds gallery or launch th
 
 ## Get started
 
-1. Open [MiPod Classic in DoodleDev Builds](https://doodledev.app/builds/#mipod).
-2. Select the device to open the live player.
-3. Browse the library, choose a track and use the click wheel to control playback.
+1. Open the [MiPod Classic live demo](https://mitchivindesign.github.io/mipod/).
+2. Browse the library and choose a track.
+3. Use the click wheel to control playback.
 
 This repository contains public product information. The application source is not published here.
 
