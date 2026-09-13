@@ -1,17 +1,41 @@
 # MiPod Classic
 
-MiPod Classic is a browser-based click-wheel music player built in [DoodleDev](https://doodledev.app/), with library browsing, playlists, album artwork, playback, and local music import.
+A browser click-wheel music player with library browsing, playlists, album artwork, playback and local music import.
 
-[Open the DoodleDev Builds gallery](https://doodledev.app/builds/) · [Launch MiPod Classic](https://mitchivindesign.github.io/mipod/) · [Visit MitchIvin XP](https://mitchivin.com/)
+**[Explore in DoodleDev](https://doodledev.app/builds/#mipod) · [Launch MiPod Classic](https://mitchivindesign.github.io/mipod/)**
+
+Works on desktop and phone. Open it in the DoodleDev Builds gallery or launch the standalone player.
 
 ![MiPod Classic Now Playing](assets/mipod-playing-device-1920x1080.webp)
 
-## About this repository
+## Features
 
-This is the public project page for MiPod Classic. It contains project information and screenshots; the working product source and deployment are maintained privately.
-
-The canonical shared device behavior, states, library, and media are maintained with MitchIvin XP. The standalone edition adds local import, its full-page presentation, and deployment packaging without forking those shared behaviors.
+- **Music library.** Browse artists, albums, songs and playlists on the device.
+- **Click wheel.** Navigate and control playback with the familiar circular interface.
+- **Now Playing.** View album artwork, track details and playback progress.
+- **Local music import.** Add music from your own device in the standalone player.
+- **Responsive shell.** The full device scales across desktop and phone layouts.
 
 ![MiPod Classic menu](assets/mipod-menu-device-1920x1080.webp)
 
+## Get started
+
+1. Open [MiPod Classic in DoodleDev Builds](https://doodledev.app/builds/#mipod).
+2. Select the device to open the live player.
+3. Browse the library, choose a track and use the click wheel to control playback.
+
+This repository contains public product information. The application source is not published here.
+
+## Related
+
+- [DoodleDev](https://doodledev.app/)
+- [Mi Boy Color](https://github.com/mitchivin/miboy)
+- [MitchIvin XP](https://mitchivin.com/)
+
+## About
+
+Built by [Mitch Ivin](https://mitchivin.com/) in [DoodleDev](https://doodledev.app/).
+
 MiPod Classic is an independent creative project and is not affiliated with Apple.
+
+Screenshots captured at 1920 × 1080.
